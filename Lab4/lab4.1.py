@@ -1,70 +1,104 @@
+import numpy as np
 import random
 import matplotlib.pyplot as plt
-import numpy as np
 
-class Fireflies:
-    def __init__(self, N, beta_zero, gamma_zero, mu_zero, x_min_i=0, x_max_i=100, iterations=30):
-        self.N = N
-        self.beta_zero = beta_zero
-        self.gamma = gamma_zero / (x_max_i - x_min_i)
-        self.mu_i = (x_max_i - x_min_i) * mu_zero
-        self.iterations = iterations
-        self.X = np.random.uniform(x_min_i, x_max_i, (N, 2))
-        self.F = np.array([self.evaluate_function(x) for x in self.X])
-        self.best_point = [self.X[np.argmax(self.F)], np.max(self.F)]
+def funkcja_przystosowania(x1, x2):
+    return np.sin(x1 * 0.05) + np.sin(x2 * 0.05) + 0.4 * np.sin(x1 * 0.15) * np.sin(x2 * 0.15)
 
-    def evaluate_function(self, position):
-        x1, x2 = position
-        return np.sin(x1 * 0.05) + np.sin(x2 * 0.05) + 0.4 * np.sin(x1 * 0.15) * np.sin(x2 * 0.15)
+def inicjalizuj_populacje(mu, zakres_zmienności):
+    return np.random.uniform(zakres_zmienności[0], zakres_zmienności[1], (mu, 2))
 
-    def update_best_point(self, index):
-        if self.F[index] > self.best_point[1]:
-            self.best_point = [self.X[index], self.F[index]]
+def selekcja_turniej(populacja, turniej_rozmiar):
+    turniej = random.sample(list(populacja), turniej_rozmiar)
+    najlepszy = max(turniej, key=lambda ind: funkcja_przystosowania(ind[0], ind[1]))
+    return najlepszy
 
-    def visualize(self, iteration):
-        if iteration == 0:
-            iteration = 'INITIAL'
-        x_1, x_2 = np.meshgrid(np.linspace(-25, 125, 400), np.linspace(-25, 125, 400))
-        z = self.evaluate_function([x_1, x_2])
-        plt.figure(figsize=(10, 8))
-        contour = plt.contourf(x_1, x_2, z, levels=50, cmap='viridis')
-        plt.colorbar(contour)
-        plt.scatter(self.X[:, 0], self.X[:, 1], c='red', marker='o', s=100, label="Fireflies")
-        plt.scatter(*self.best_point[0], c='blue', marker='x', s=200, label="Best Point")
-        plt.title(f'Fireflies iteration {iteration}')
-        plt.legend()
-        plt.show()
+def krzyzowanie(parent1, parent2):
+    point = random.randint(1, 2)
+    if point == 1:
+        child1 = np.array([parent1[0], parent2[1]])
+        child2 = np.array([parent2[0], parent1[1]])
+    else:
+        child1 = np.array([parent1[0], parent2[1]])
+        child2 = np.array([parent2[0], parent1[1]])
+    return child1, child2
 
-    def euclidean_distance(self, p1, p2):
-        return np.sqrt(np.sum((np.array(p1) - np.array(p2)) ** 2))
+def mutacja(indywiduum, mutacja_poziom, zakres_zmienności):
+    if random.random() < 0.1:  # Prawdopodobieństwo mutacji
+        indywiduum[0] += np.random.uniform(-mutacja_poziom, mutacja_poziom)
+        indywiduum[1] += np.random.uniform(-mutacja_poziom, mutacja_poziom)
+        indywiduum = np.clip(indywiduum, zakres_zmienności[0], zakres_zmienności[1])
+    return indywiduum
 
-    def move_fireflies(self):
-        for i in random.sample(range(self.N), self.N):
-            for j in random.sample(range(self.N), self.N):
-                if self.F[j] > self.F[i]:
-                    distance = self.euclidean_distance(self.X[i], self.X[j])
-                    beta = self.beta_zero * np.exp(-self.gamma * distance ** 2)
-                    self.X[i] += beta * (self.X[j] - self.X[i])
-            self.X[i] += np.random.uniform(-self.mu_i, self.mu_i, 2)
-            self.F[i] = self.evaluate_function(self.X[i])
-            self.update_best_point(i)
+def algorytm_ewolucyjny(mu, lambd, turniej_rozmiar, mutacja_poziom, iteracje_liczba, zakres_zmienności):
+    populacja = inicjalizuj_populacje(mu, zakres_zmienności)
+    najlepsze_wyniki = []
 
-    def optimize(self, visualize=False, visualize_interval=1):
-        for i in range(self.iterations):
-            self.move_fireflies()
-            if visualize and (i % visualize_interval == 0 or i == self.iterations - 1):
-                self.visualize(i)
+    for i in range(iteracje_liczba):
+        nowe_indywidua = []
+        
+        for _ in range(lambd // 2):
+            parent1 = selekcja_turniej(populacja, turniej_rozmiar)
+            parent2 = selekcja_turniej(populacja, turniej_rozmiar)
+            child1, child2 = krzyzowanie(parent1, parent2)
+            nowe_indywidua.append(mutacja(child1, mutacja_poziom, zakres_zmienności))
+            nowe_indywidua.append(mutacja(child2, mutacja_poziom, zakres_zmienności))
+        
+        populacja = np.vstack((populacja, nowe_indywidua))
+        populacja = sorted(populacja, key=lambda ind: funkcja_przystosowania(ind[0], ind[1]), reverse=True)[:mu]
 
-    def get_best_point(self):
-        return self.best_point
+        najlepsze_wyniki.append(populacja[0])
 
-def run_fireflies_algorithm():
-    ff = Fireflies(4, 0.3, 0.1, 0.05, iterations=100)
-    ff.optimize(visualize=True, visualize_interval=20)
-    print("Najlepszy punkt (x1, x2):\n", ff.get_best_point()[0])
+        print(f"{i + 1} iteracja: Najlepszy osobnik: {populacja[0]}, Wartość przystosowania: {funkcja_przystosowania(populacja[0][0], populacja[0][1])}")
 
-def main():
-    run_fireflies_algorithm()
+        if i % 5 == 0 or i == iteracje_liczba - 1:  # Co 5 iteracji
+            wizualizacja(populacja, najlepsze_wyniki, zakres_zmienności, i)
 
-if __name__ == '__main__':
-    main()
+    najlepszy = max(populacja, key=lambda ind: funkcja_przystosowania(ind[0], ind[1]))
+    return najlepszy, najlepsze_wyniki
+
+def wizualizacja(populacja, najlepsze_wyniki, zakres_zmienności, iteracja):
+    x1 = np.linspace(zakres_zmienności[0], zakres_zmienności[1], 400)
+    x2 = np.linspace(zakres_zmienności[0], zakres_zmienności[1], 400)
+    X1, X2 = np.meshgrid(x1, x2)
+    Z = funkcja_przystosowania(X1, X2)
+
+    plt.figure(figsize=(10, 8))
+    plt.contourf(X1, X2, Z, levels=50, cmap='viridis', alpha=0.7)
+    plt.colorbar(label='Wartość funkcji przystosowania')
+    
+    populacja_np = np.array(populacja)
+    plt.scatter(populacja_np[:, 0], populacja_np[:, 1], c='red', marker='o', s=100, label="Osobniki")
+    
+    najlepszy_osobnik = najlepsze_wyniki[-1]
+    plt.scatter(najlepszy_osobnik[0], najlepszy_osobnik[1], c='blue', marker='x', s=200, label="Najlepszy osobnik")
+    
+    plt.title(f'Iteracja {iteracja + 1}')
+    plt.xlabel('x1')
+    plt.ylabel('x2')
+    plt.legend()
+    plt.show()
+
+mu = 4
+lambd = 10
+turniej_rozmiar = 2
+mutacja_poziom = 10
+iteracje_liczba = 20
+zakres_zmienności = (0, 100)
+
+najlepszy_osobnik, najlepsze_wyniki = algorytm_ewolucyjny(mu, lambd, turniej_rozmiar, mutacja_poziom, iteracje_liczba, zakres_zmienności)
+
+x1_wyniki = [ind[0] for ind in najlepsze_wyniki]
+x2_wyniki = [ind[1] for ind in najlepsze_wyniki]
+y_wyniki = [funkcja_przystosowania(ind[0], ind[1]) for ind in najlepsze_wyniki]
+
+plt.plot(range(1, iteracje_liczba + 1), y_wyniki, marker='o')
+plt.title('Najlepsze wyniki w kolejnych iteracjach')
+plt.xlabel('Iteracja')
+plt.ylabel('Wartość funkcji przystosowania')
+plt.xticks(range(1, iteracje_liczba + 1))
+plt.grid()
+plt.show()
+
+najlepsza_wartosc = funkcja_przystosowania(najlepszy_osobnik[0], najlepszy_osobnik[1])
+print(f"\nNajlepszy osobnik: {najlepszy_osobnik}, Wartość funkcji F: {najlepsza_wartosc}")
