@@ -7,31 +7,30 @@ import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from Lab2.lab2 import draw_points
 
-class Data:
+class Dataset:
     def __init__(self):
-        self.data = pd.DataFrame()
+        self.dataframe = pd.DataFrame()
 
-    def read_data(self, nazwa_pliku_z_wartosciami: str):
-        self.data = pd.read_csv(nazwa_pliku_z_wartosciami, sep='\s+', header=None)
+    def load_data(self, filename: str):
+        self.dataframe = pd.read_csv(filename, sep='\s+', header=None)
 
-    def probki_str_na_liczby(self, numery_atr: list = None):
-        if not all(len(row) == len(self.data.iloc[0]) for row in self.data.values):
-            raise ValueError("Wiersze mają różne długości.")
+    def convert_samples_to_numbers(self, attribute_indices: list = None):
+        if not all(len(row) == len(self.dataframe.iloc[0]) for row in self.dataframe.values):
+            raise ValueError("Rows have different lengths.")
 
         try:
-            if numery_atr is not None:
-                self.data = self.data.iloc[:, numery_atr].apply(pd.to_numeric, errors='coerce')
+            if attribute_indices is not None:
+                self.dataframe = self.dataframe.iloc[:, attribute_indices].apply(pd.to_numeric, errors='coerce')
             else:
-                self.data = self.data.apply(pd.to_numeric, errors='coerce')
-            self.data.dropna(inplace=True)
+                self.dataframe = self.dataframe.apply(pd.to_numeric, errors='coerce')
+            self.dataframe.dropna(inplace=True)
         except Exception as e:
-            print(f"Błąd podczas konwersji: {e}")
+            print(f"Error during conversion: {e}")
 
-    def get_data(self) -> np.ndarray:
-        """Zwraca dane jako macierz NumPy."""
-        return self.data.to_numpy()
+    def get_data_as_array(self) -> np.ndarray:
+        return self.dataframe.to_numpy()
 
-class KMeans:
+class KMeansClustering:
     def __init__(self, data: np.ndarray, k: int, max_iterations: int = 100):
         self.data = data
         self.k = k
@@ -41,28 +40,28 @@ class KMeans:
 
     def initialize_centroids(self):
         if self.data.size == 0:
-            raise ValueError("Nie można zainicjalizować centroidów, ponieważ dane są puste.")
+            raise ValueError("Cannot initialize centroids because data is empty.")
         
         initial_indices = np.random.choice(len(self.data), self.k, replace=False)
         self.centroids = self.data[initial_indices]
 
-    def visualize(self):
+    def visualize_clusters(self):
         fig, ax = plt.subplots(figsize=(8, 6))
 
         if self.data.shape[1] < 2:
-            print("Błąd: Zbyt mało wymiarów do wizualizacji.")
+            print("Error: Too few dimensions for visualization.")
             return
 
-        for x in range(self.k):
-            cluster_data = self.data[self.membership == x]
+        for cluster_index in range(self.k):
+            cluster_data = self.data[self.membership == cluster_index]
             if cluster_data.size > 0:
-                draw_points(ax, cluster_data[:, 0], cluster_data[:, 1], x)
+                draw_points(ax, cluster_data[:, 0], cluster_data[:, 1], cluster_index)
 
         if self.centroids is not None:
             draw_points(ax, self.centroids[:, 0], self.centroids[:, 1], self.k)
         
-        ax.set_title('Klasteryzacja K-średnich')
-        ax.legend([f'Grupa {i + 1}' for i in range(self.k)] + ['Centroidy'])
+        ax.set_title('K-Means Clustering')
+        ax.legend([f'Group {i + 1}' for i in range(self.k)] + ['Centroids'])
         plt.show()
 
     def fit(self):
@@ -73,17 +72,17 @@ class KMeans:
 
             new_centroids = np.array([self.data[self.membership == k].mean(axis=0) for k in range(self.k)])
             if np.any(np.isnan(new_centroids)):
-                print("Błąd: Nie udało się utworzyć wszystkich centroidów.")
+                print("Error: Failed to create all centroids.")
                 return
             if np.all(self.centroids == new_centroids):
-                print(f"Algorytm zbiega po {iteration} iteracjach.")
+                print(f"Algorithm converged after {iteration} iterations.")
                 break
 
             self.centroids = new_centroids
 
-            print(f"Iteracja {iteration + 1}:")
-            print("Centroidy:", self.centroids)
-            print("Przynależność:", self.membership)
+            print(f"Iteration {iteration + 1}:")
+            print("Centroids:", self.centroids)
+            print("Membership:", self.membership)
 
     def get_centroids(self) -> np.ndarray:
         return self.centroids
@@ -91,35 +90,34 @@ class KMeans:
     def get_membership(self) -> np.ndarray:
         return self.membership
 
-def zad1():
-    probki_str = [["1", "a", "2.2"], ["3", "4", "5"]]
-    numery_atr = [0, 2]
+def zad1 ():
+    sample_strings = [["1", "a", "2.2"], ["3", "4", "5"]]
+    attribute_indices = [0, 2]
 
-    data = Data()
-    data.data = pd.DataFrame(probki_str)
-    data.probki_str_na_liczby(numery_atr)
-    print("Dane po konwersji:", data.get_data())
+    dataset = Dataset()
+    dataset.dataframe = pd.DataFrame(sample_strings)
+    dataset.convert_samples_to_numbers(attribute_indices)
+    print("Data after conversion:", dataset.get_data_as_array())
 
+def zad2 ():
+    dataset = Dataset()
+    dataset.load_data('spiralka.txt')
+    dataset.convert_samples_to_numbers()
 
-def zad2():
-    data = Data()
-    data.read_data('spiralka.txt')
-    data.probki_str_na_liczby()
-
-    if data.get_data().size == 0:
-        print("Błąd: Wczytane dane są puste.")
+    if dataset.get_data_as_array().size == 0:
+        print("Error: Loaded data is empty.")
         return
 
-    kmeans = KMeans(data.get_data(), k=4)
+    kmeans = KMeansClustering(dataset.get_data_as_array(), k=4)
     kmeans.fit()
     
     if kmeans.centroids is not None:
-        kmeans.visualize()
-        print("Ostateczne punkty centralne:\n", kmeans.get_centroids())
+        kmeans.visualize_clusters()
+        print("Final centroid points:\n", kmeans.get_centroids())
 
 def main():
-    zad1()
-    zad2()
+    task1()
+    task2()
 
 if __name__ == '__main__':
     np.random.seed(0)
