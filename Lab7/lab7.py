@@ -27,9 +27,8 @@ class HopfieldNetwork:
         return flat_pattern.reshape(self.height, self.width)
 
     def display(self, pattern):
-        """Wyświetla obraz."""
         plt.imshow(pattern, cmap='gray', vmin=-1, vmax=1)
-        plt.title('Naprawiony obraz')
+        plt.title('Repaired Image')
         plt.axis('off')
         plt.show()
 

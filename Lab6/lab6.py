@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 class GreedyPointMatching:
     def __init__(self, main_bitmap):
         self.main_bitmap = np.array(main_bitmap)
@@ -37,7 +36,7 @@ class GreedyPointMatching:
         fig, axes = plt.subplots(2, num_test_bitmaps + 1, figsize=(12, 6))
 
         axes[0, 0].imshow(self.main_bitmap, cmap='Greys')
-        axes[0, 0].set_title('Bitmap Główna')
+        axes[0, 0].set_title('Main Bitmap')
         axes[0, 0].axis('off')
 
         for idx, (label, bitmap) in enumerate(self.test_bitmaps.items()):
@@ -53,7 +52,7 @@ class GreedyPointMatching:
         best_match_label = max(self.similarity_measures, key=self.similarity_measures.get)
         best_match_value = self.similarity_measures[best_match_label]
 
-        axes[1, num_test_bitmaps].text(0.5, 0.5, f'Najlepsze dopasowanie:\n{best_match_label}\n{best_match_value:.2f}',
+        axes[1, num_test_bitmaps].text(0.5, 0.5, f'Best Match:\n{best_match_label}\n{best_match_value:.2f}',
                                          horizontalalignment='center', verticalalignment='center', fontsize=14)
         axes[1, num_test_bitmaps].axis('off')
 
@@ -65,39 +64,36 @@ class GreedyPointMatching:
         if visualize:
             self.visualize()
         else:
-            print('Brak obrazów testowych do porównania.')
-
+            print('No test images to compare.')
 
 def zad1():
     test1 = [[0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 1, 1], [0, 0, 0, 1], [0, 0, 0, 1]]
     test2 = [[1, 1, 1, 1], [0, 0, 0, 1], [1, 1, 1, 1], [0, 0, 1, 1], [1, 1, 1, 1]]
     test3 = [[1, 1, 1, 1], [0, 0, 0, 1], [0, 0, 1, 0], [1, 1, 0, 0], [1, 1, 1, 1]]
-    wzorzec1 = [[0, 0, 0, 1], [0, 0, 1, 1], [0, 1, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1]]
-    wzorzec2 = [[0, 1, 1, 1], [1, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 1, 1, 1]]
-    wzorzec3 = [[1, 1, 1, 0], [0, 0, 0, 1], [1, 1, 1, 1], [0, 0, 0, 1], [1, 1, 1, 0]]
+    pattern1 = [[0, 0, 0, 1], [0, 0, 1, 1], [0, 1, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1]]
+    pattern2 = [[0, 1, 1, 1], [1, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 1, 1, 1]]
+    pattern3 = [[1, 1, 1, 0], [0, 0, 0, 1], [1, 1, 1, 1], [0, 0, 0, 1], [1, 1, 1, 0]]
 
     gpm1 = GreedyPointMatching(test1)
-    gpm1.add_test_bitmap(wzorzec1, 'Wzorzec 1')
-    gpm1.add_test_bitmap(wzorzec2, 'Wzorzec 2')
-    gpm1.add_test_bitmap(wzorzec3, 'Wzorzec 3')
+    gpm1.add_test_bitmap(pattern1, 'Pattern 1')
+    gpm1.add_test_bitmap(pattern2, 'Pattern 2')
+    gpm1.add_test_bitmap(pattern3, 'Pattern 3')
     gpm1()
 
     gpm2 = GreedyPointMatching(test2)
-    gpm2.add_test_bitmap(wzorzec1, 'Wzorzec 1')
-    gpm2.add_test_bitmap(wzorzec2, 'Wzorzec 2')
-    gpm2.add_test_bitmap(wzorzec3, 'Wzorzec 3')
+    gpm2.add_test_bitmap(pattern1, 'Pattern 1')
+    gpm2.add_test_bitmap(pattern2, 'Pattern 2')
+    gpm2.add_test_bitmap(pattern3, 'Pattern 3')
     gpm2()
 
     gpm3 = GreedyPointMatching(test3)
-    gpm3.add_test_bitmap(wzorzec1, 'Wzorzec 1')
-    gpm3.add_test_bitmap(wzorzec2, 'Wzorzec 2')
-    gpm3.add_test_bitmap(wzorzec3, 'Wzorzec 3')
+    gpm3.add_test_bitmap(pattern1, 'Pattern 1')
+    gpm3.add_test_bitmap(pattern2, 'Pattern 2')
+    gpm3.add_test_bitmap(pattern3, 'Pattern 3')
     gpm3()
-
 
 def main():
     zad1()
-
 
 if __name__ == '__main__':
     main()

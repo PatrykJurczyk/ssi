@@ -1,18 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def funkcja_przystosowania(x1, x2):
+def fitness_function(x1, x2):
     return np.sin(0.05 * x1) + np.sin(0.05 * x2) + 0.4 * np.sin(0.15 * x1) * np.sin(0.15 * x2)
 
-def odleglosc(firefly_a, firefly_b):
+def euclidean_distance(firefly_a, firefly_b):
     return np.sqrt(np.sum((firefly_a - firefly_b) ** 2))
 
-def firefly_algorithm(N, beta0, gamma0, mu0, iteracje_liczba, xmin, xmax):
-    populacja = np.random.uniform(xmin, xmax, (N, 2))
-    oceny = np.array([funkcja_przystosowania(ind[0], ind[1]) for ind in populacja])
+def firefly_algorithm(num_fireflies, initial_beta, initial_gamma, mutation_rate, num_iterations, xmin, xmax):
+    population = np.random.uniform(xmin, xmax, (num_fireflies, 2))
+    evaluations = np.array([fitness_function(ind[0], ind[1]) for ind in population])
     
-    r_max = np.sqrt(2 * (xmax - xmin) ** 2)
-    gamma = gamma0 / r_max
+    max_distance = np.sqrt(2 * (xmax - xmin) ** 2)
+    gamma = initial_gamma / max_distance
 
     fig = plt.figure(figsize=(10, 6))
     ax = fig.add_subplot(111, projection='3d')
@@ -20,44 +20,45 @@ def firefly_algorithm(N, beta0, gamma0, mu0, iteracje_liczba, xmin, xmax):
     x1_vals = np.linspace(xmin, xmax, 100)
     x2_vals = np.linspace(xmin, xmax, 100)
     x1_grid, x2_grid = np.meshgrid(x1_vals, x2_vals)
-    z_vals = funkcja_przystosowania(x1_grid, x2_grid)
+    z_vals = fitness_function(x1_grid, x2_grid)
 
     ax.plot_surface(x1_grid, x2_grid, z_vals, cmap='viridis', alpha=0.6)
     ax.set_xlabel('x1')
     ax.set_ylabel('x2')
     ax.set_zlabel('F(x1, x2)')
 
-    for t in range(iteracje_liczba):
-        for a in range(N):
-            for b in range(N):
-                if oceny[b] > oceny[a]:
-                    r_ab = odleglosc(populacja[a], populacja[b])
-                    beta = beta0 * np.exp(-gamma * r_ab ** 2)
-                    populacja[a] += beta * (populacja[b] - populacja[a])
-                    mutacja = mu0 * (xmax - xmin) * (np.random.rand(2) - 0.5)
-                    populacja[a] += mutacja
+    for iteration in range(num_iterations):
+        for a in range(num_fireflies):
+            for b in range(num_fireflies):
+                if evaluations[b] > evaluations[a]:
+                    distance_ab = euclidean_distance(population[a], population[b])
+                    beta = initial_beta * np.exp(-gamma * distance_ab ** 2)
+                    population[a] += beta * (population[b] - population[a])
+                    mutation = mutation_rate * (xmax - xmin) * (np.random.rand(2) - 0.5)
+                    population[a] += mutation
 
-                    populacja[a] = np.clip(populacja[a], xmin, xmax)
+                    population[a] = np.clip(population[a], xmin, xmax)
 
-            oceny[a] = funkcja_przystosowania(populacja[a][0], populacja[a][1])
+            evaluations[a] = fitness_function(population[a][0], population[a][1])
 
-        ax.scatter(populacja[:, 0], populacja[:, 1], oceny, color='red', label=f'Iteracja {t+1}' if t == 0 else "")
+        ax.scatter(population[:, 0], population[:, 1], evaluations, color='red', label=f'Iteration {iteration + 1}' if iteration == 0 else "")
         plt.pause(0.1)
 
-        najlepszy_indeks = np.argmax(oceny)
-        print(f"Iteracja {t+1}: Najlepsze x1 = {populacja[najlepszy_indeks][0]:.4f}, x2 = {populacja[najlepszy_indeks][1]:.4f}, Ocena: {oceny[najlepszy_indeks]:.4f}")
+        best_index = np.argmax(evaluations)
+        print(f"Iteration {iteration + 1}: Best x1 = {population[best_index][0]:.4f}, x2 = {population[best_index][1]:.4f}, Evaluation: {evaluations[best_index]:.4f}")
+
     plt.show()
 
-    najlepszy_indeks = np.argmax(oceny)
-    return populacja[najlepszy_indeks], oceny[najlepszy_indeks]
+    best_index = np.argmax(evaluations)
+    return population[best_index], evaluations[best_index]
 
-N = 5
-beta0 = 0.3
-gamma0 = 0.1
-mu0 = 0.05
-iteracje_liczba = 100
+num_fireflies = 5
+initial_beta = 0.3
+initial_gamma = 0.1
+mutation_rate = 0.05
+num_iterations = 30
 xmin, xmax = 0, 100
 
-najlepszy_swietlik, najlepsza_ocena = firefly_algorithm(N, beta0, gamma0, mu0, iteracje_liczba, xmin, xmax)
+best_firefly, best_evaluation = firefly_algorithm(num_fireflies, initial_beta, initial_gamma, mutation_rate, num_iterations, xmin, xmax)
 
-print(f"\nNajlepsze rozwiązanie: x1 = {najlepszy_swietlik[0]:.4f}, x2 = {najlepszy_swietlik[1]:.4f}, Ocena: {najlepsza_ocena:.4f}")
+print(f"\nBest solution: x1 = {best_firefly[0]:.4f}, x2 = {best_firefly[1]:.4f}, Evaluation: {best_evaluation:.4f}")

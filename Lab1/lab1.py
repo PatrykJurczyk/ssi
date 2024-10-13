@@ -1,29 +1,29 @@
 import pandas as pd
 import re
 
-def wczytaj_baze_probek_z_tekstem(nazwa_pliku_z_wartosciami, nazwa_pliku_z_opisem_atr):
+def load_sample_data_with_text(values_filename, attributes_filename):
     try:
-        atr_data = pd.read_csv(nazwa_pliku_z_opisem_atr, sep=r'\s+', header=None, names=['nazwa_atr', 'typ_atr'])
-        nazwy_atr = atr_data['nazwa_atr'].tolist()
-        czy_atr_symb = atr_data['typ_atr'].apply(lambda x: x == 's').tolist()
+        attributes_data = pd.read_csv(attributes_filename, sep=r'\s+', header=None, names=['attribute_name', 'attribute_type'])
+        attribute_names = attributes_data['attribute_name'].tolist()
+        is_symbolic_attribute = attributes_data['attribute_type'].apply(lambda x: x == 's').tolist()
 
-        df_probki = pd.read_csv(nazwa_pliku_z_wartosciami, sep=r'\s+', header=None, names=nazwy_atr)
+        samples_df = pd.read_csv(values_filename, sep=r'\s+', header=None, names=attribute_names)
         
-        symboliczna_kolumna = nazwy_atr[czy_atr_symb.index(True)]
-        match = re.search(r'class\((.+)\)', symboliczna_kolumna)
+        symbolic_column = attribute_names[is_symbolic_attribute.index(True)]
+        match = re.search(r'class\((.+)\)', symbolic_column)
 
         if match:
-            mapowanie_class = dict(item.split('=') for item in match.group(1).split(','))
-            df_probki[symboliczna_kolumna] = df_probki[symboliczna_kolumna].apply(lambda x: mapowanie_class.get(str(x), x))
+            class_mapping = dict(item.split('=') for item in match.group(1).split(','))
+            samples_df[symbolic_column] = samples_df[symbolic_column].apply(lambda x: class_mapping.get(str(x), x))
 
-        return df_probki, czy_atr_symb, nazwy_atr
+        return samples_df, is_symbolic_attribute, attribute_names
 
     except FileNotFoundError as e:
-        print(f"Błąd: {e}")
+        print(f"Error: {e}")
     except Exception as e:
-        print(f"Wystąpił nieoczekiwany błąd: {e}")
+        print(f"Unexpected error occurred: {e}")
 
 
-df, czy_atr_symb, nazwy_atr = wczytaj_baze_probek_z_tekstem('iris.txt', 'iris-type.txt')
-print("Tabela próbek:")
+df, is_symbolic_attribute, attribute_names = load_sample_data_with_text('iris.txt', 'iris-type.txt')
+print("Sample table:")
 print(df)
